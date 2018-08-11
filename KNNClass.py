@@ -2,6 +2,8 @@
 
 
 import numpy as np
+from collections import Counter
+from scipy.spatial.distance import euclidean
 
 
 class BaseEstimator(object):
@@ -49,3 +51,42 @@ class BaseEstimator(object):
             raise NotImplementedError()
         else:
             raise ValueError('You must call "fit" before "predict')
+
+
+class KNNBase(BaseEstimator):
+
+    def __init__(self, k=5, dist_fun=euclidean):
+        self.k = None if k == 0 else k
+        self.dist_fun = dist_fun
+
+    def aggregate(self, neighbor_targets):
+        raise NotImplementedError()
+
+    def _predict(self, X=None):
+        predictions = [self._predict_x(x) for x in X]
+
+        return np.array(predictions)
+
+    def _predict_x(self, x):
+
+        distance = (self.dist_fun(x, example) for example in self.X)
+
+        neighbors = sorted(((dist, target) for (dist, target) in zip(distance, self.y)),
+                           key=lambda x: x[0])
+
+        neighbors_target = [target for (_, target) in neighbors[:self.k]]
+
+        return self.aggregate(neighbors_target)
+
+
+class KNNClassifier(KNNBase):
+
+    def aggregate(self, neighbors_target):
+        most_common_label = Counter(neighbors_target).most_common(1)[0][0]
+        return most_common_label
+
+
+class KNNRegressor(KNNBase):
+
+    def aggregate(self, neighbors_target):
+        return np.array(neighbors_target)
