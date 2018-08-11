@@ -48,9 +48,12 @@ class BaseEstimator(object):
             X = np.array(X)
 
         if self.X is not None or not self.fit_required:
-            raise NotImplementedError()
+            return self._predict(X)
         else:
             raise ValueError('You must call "fit" before "predict')
+
+    def _predict(self, X=None):
+        raise NotImplementedError()
 
 
 class KNNBase(BaseEstimator):
